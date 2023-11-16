@@ -1,6 +1,8 @@
 # Budget Life
 ### By: Maxwell Kuse
 
+# 2023 Capstone Project
+# GitHub Username: mwkuse
 
 
 
