@@ -6,10 +6,12 @@ import 'package:budgetlife/expense_list.dart';
 
 class ExpenseReport extends StatelessWidget {
   final DateTime weekStart;
+  final double weeklyBudget;
 
   const ExpenseReport({
     super.key,
     required this.weekStart,
+    required this.weeklyBudget,
   });
 
   double getMaxExpense(
@@ -80,12 +82,21 @@ class ExpenseReport extends StatelessWidget {
       builder: (context, value, child) => Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 5),
             child: Row(
               children: [
                 const Text('Weekly Total: '),
                 Text(
                     '\$${getWeekTotal(value, sunday, monday, tuesday, wednesday, thursday, friday, saturday)}'),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(15, 0, 15, 5),
+            child: Row(
+              children: [
+                const Text('Weekly Budget: '),
+                Text('\$${weeklyBudget.toStringAsFixed(2)}'),
               ],
             ),
           ),
@@ -104,8 +115,7 @@ class ExpenseReport extends StatelessWidget {
                 SizedBox(
                   width: screenWidth,
                   child: BarGraph(
-                    maxY: getMaxExpense(value, sunday, monday, tuesday,
-                        wednesday, thursday, friday, saturday),
+                    maxY: weeklyBudget,
                     sunTotal: value.calculateDailyExpenseSummary()[sunday] ?? 0,
                     monTotal: value.calculateDailyExpenseSummary()[monday] ?? 0,
                     tuesTotal:

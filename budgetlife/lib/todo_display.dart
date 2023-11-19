@@ -31,18 +31,25 @@ class ToDoDisplayState extends State<ToDoDisplay> {
     _isChecked = widget.isChecked;
   }
 
-  void updateCheckbox(bool? checked) async {
+  void updateCheckbox(bool? checked) {
     if (checked != null) {
-      setState(() {
-        _isChecked = checked;
-      });
+      updateCheckboxState(checked);
+      updateHiveDataBase();
     }
-    final hivebox = Hive.box("budget_life_database");
+  }
 
+  void updateCheckboxState(bool checked) {
+    setState(() {
+      _isChecked = checked;
+    });
+  }
+
+  void updateHiveDataBase() async {
+    final hivebox = Hive.box("budget_life_database");
     final List<dynamic> todos = hivebox.get('todos') ?? [];
 
     for (int i = 0; i < todos.length; i++) {
-      if (todos[i][0] == widget.title) {
+      if (todos[i][0] == widget.title && todos[i][1] == widget.description) {
         List<dynamic> updatedToDo = [
           widget.title,
           widget.description,
@@ -54,6 +61,29 @@ class ToDoDisplayState extends State<ToDoDisplay> {
       }
     }
   }
+  // void updateCheckbox(bool? checked) async {
+  //   if (checked != null) {
+  //     setState(() {
+  //       _isChecked = checked;
+  //     });
+  //   }
+  //   final hivebox = Hive.box("budget_life_database");
+
+  //   final List<dynamic> todos = hivebox.get('todos') ?? [];
+
+  //   for (int i = 0; i < todos.length; i++) {
+  //     if (todos[i][0] == widget.title) {
+  //       List<dynamic> updatedToDo = [
+  //         widget.title,
+  //         widget.description,
+  //         _isChecked,
+  //       ];
+  //       todos[i] = updatedToDo;
+  //       await hivebox.put('todos', todos);
+  //       break;
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

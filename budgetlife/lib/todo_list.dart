@@ -13,10 +13,11 @@ class ToDoList extends ChangeNotifier {
   }
 
   void initData() {
-    if (toDoDataBase.getData().isNotEmpty) {
-      toDoList = toDoDataBase.getToDoData();
-    }
-    // toDoList = toDoDataBase.getToDoData();
+    // To Do Entries not always persistent w/ commented out code
+    // if (toDoDataBase.getData().isNotEmpty) {
+    //   toDoList = toDoDataBase.getToDoData();
+    // }
+    toDoList = toDoDataBase.getToDoData();
   }
 
   // Add New Expense to List

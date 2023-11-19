@@ -128,8 +128,8 @@ class PieChartWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 5,
-                      height: 5,
+                      width: 8,
+                      height: 8,
                       color: getColor(index),
                     ),
                     const SizedBox(

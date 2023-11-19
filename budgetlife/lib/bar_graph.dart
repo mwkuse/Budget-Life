@@ -39,42 +39,48 @@ class BarGraph extends StatelessWidget {
 
     mybars.initializeBarData();
     return SizedBox(
-      height: 325,
+      height: 200,
       width: screenWidth,
-      child: BarChart(BarChartData(
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: false),
-        titlesData: const FlTitlesData(
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: getBottomLables,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        child: BarChart(
+          BarChartData(
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            titlesData: const FlTitlesData(
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: getBottomLables,
+                ),
+              ),
             ),
+            minY: 0,
+            maxY: maxY,
+            barGroups: mybars.barData
+                .map((data) => BarChartGroupData(
+                      x: data.x,
+                      barRods: [
+                        BarChartRodData(
+                            toY: data.y,
+                            color: Colors.red,
+                            width: 20,
+                            borderRadius: BorderRadius.circular(10),
+                            backDrawRodData: BackgroundBarChartRodData(
+                              show: true,
+                              toY: maxY,
+                              color: Colors.grey.shade200,
+                            )),
+                      ],
+                    ))
+                .toList(),
           ),
         ),
-        minY: 0,
-        maxY: maxY,
-        barGroups: mybars.barData
-            .map((data) => BarChartGroupData(
-                  x: data.x,
-                  barRods: [
-                    BarChartRodData(
-                        toY: data.y,
-                        color: Colors.red,
-                        width: 20,
-                        borderRadius: BorderRadius.circular(10),
-                        backDrawRodData: BackgroundBarChartRodData(
-                          show: true,
-                          toY: maxY,
-                          color: Colors.grey.shade200,
-                        )),
-                  ],
-                ))
-            .toList(),
-      )),
+      ),
     );
   }
 }

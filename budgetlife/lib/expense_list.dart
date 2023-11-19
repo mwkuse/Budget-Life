@@ -6,6 +6,7 @@ class ExpenseList extends ChangeNotifier {
   final expenseDataBase = HiveDatabase();
   // Create List of Expenses
   List<Expense> expenseList = [];
+  double weeklyBudget = 1000;
 
   // Return List of Expenses
   List<Expense> getExpenseList() {
@@ -83,6 +84,17 @@ class ExpenseList extends ChangeNotifier {
       }
     }
     return dailyExpenseSummary;
+  }
+
+  void setWeeklyBudget(double newBudget) {
+    weeklyBudget = newBudget;
+    notifyListeners();
+    expenseDataBase.saveWeeklyBudget(weeklyBudget);
+  }
+
+  void initWeeklyBudget() {
+    weeklyBudget = expenseDataBase.getWeeklyBudget() ?? 1000;
+    notifyListeners();
   }
 }
 

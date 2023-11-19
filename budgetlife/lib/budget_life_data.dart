@@ -39,6 +39,14 @@ class HiveDatabase {
     return expenseData;
   }
 
+  void saveWeeklyBudget(double weeklyBudget) {
+    _hiveBox.put("weeklyBudget", weeklyBudget);
+  }
+
+  double? getWeeklyBudget() {
+    return _hiveBox.get("weeklyBudget");
+  }
+
   // To Do List
   void saveToDoData(List<ToDoEntry> allToDos) {
     List<List<dynamic>> formattedToDos = [];

@@ -35,7 +35,7 @@ class ExpenseDisplay extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${dateTime.day} / ${dateTime.month} / ${dateTime.year}',
+              '${dateTime.month} / ${dateTime.day} / ${dateTime.year}',
               style: const TextStyle(fontSize: 12),
             ),
             Text(type, style: const TextStyle(fontWeight: FontWeight.bold)),

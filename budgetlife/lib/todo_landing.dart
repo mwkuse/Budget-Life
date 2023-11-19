@@ -118,6 +118,7 @@ class _ToDoHomePageState extends State<ToDoHomePage> {
                     removeToDo(value.getToDoList()[index]),
               ),
             ),
+            const SizedBox(height: 35),
           ],
         ),
         bottomNavigationBar: BottomAppBar(
