@@ -5,13 +5,15 @@ import 'expense_list.dart';
 import 'landing.dart';
 import 'todo_landing.dart';
 import 'todo_list.dart';
+import 'expense.dart';
 
 void main() async {
   await Hive.initFlutter();
   // Initialize Hive Local Database
+  Hive.registerAdapter(ExpenseAdapter());
   await Hive.openBox("budget_life_database");
 
-  // Delete Hive Database
+  // // Delete Hive Database
   // final hivebox = Hive.box("budget_life_database");
   // hivebox.deleteFromDisk();
 

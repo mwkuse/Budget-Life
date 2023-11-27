@@ -15,11 +15,23 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int currentWeekIndex = 0;
+
   @override
   void initState() {
     super.initState();
-    Provider.of<ExpenseList>(context, listen: false).initData();
-    Provider.of<ExpenseList>(context, listen: false).initWeeklyBudget();
+    Future.delayed(Duration.zero, () {
+      Provider.of<ExpenseList>(context, listen: false).initData();
+      Provider.of<ExpenseList>(context, listen: false).initWeeklyBudget();
+      List<DateTime> weeks = Provider.of<ExpenseList>(context, listen: false)
+          .weeklyExpenses
+          .keys
+          .toList();
+      weeks.sort();
+      setState(() {
+        currentWeekIndex = weeks.length - 1;
+      });
+    });
   }
 
   // Controllers Allows Access to Text that User Types
@@ -47,92 +59,104 @@ class _HomePageState extends State<HomePage> {
   void changeWeeklyBudget(double newBudget) {
     //print('New Weekly Budget is: $newBudget');
     weeklyBudget = newBudget;
-    Provider.of<ExpenseList>(context, listen: false).setWeeklyBudget(newBudget);
-    HiveDatabase().saveWeeklyBudget(newBudget);
+    Future.delayed(Duration.zero, () {
+      Provider.of<ExpenseList>(context, listen: false)
+          .setWeeklyBudget(newBudget);
+      HiveDatabase().saveWeeklyBudget(newBudget);
+    });
   }
 
   void addExpense() {
     DateTime setDateTime = DateTime.now();
+    String selectedDateText = 'Set Date';
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Add a New Expense'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: expenseTypeController,
-                  decoration: const InputDecoration(
-                    hintText: "Expense Type",
-                  ),
-                ),
-                Row(
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Add a New Expense'),
+              content: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: dollarController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          hintText: "Dollars",
-                        ),
+                    TextField(
+                      controller: expenseTypeController,
+                      decoration: const InputDecoration(
+                        hintText: "Expense Type",
                       ),
                     ),
-                    Expanded(
-                      child: TextField(
-                        controller: centController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          hintText: "Cents",
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: dollarController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              hintText: "Dollars",
+                            ),
+                          ),
                         ),
+                        Expanded(
+                          child: TextField(
+                            controller: centController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              hintText: "Cents",
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      items: categories.map(dropdownMenuItem).toList(),
+                      onChanged: (value) => setState(() {
+                        selectedCategory = value;
+                      }),
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        hintText: 'Select a category',
                       ),
+                    ),
+                    ListTile(
+                      title: Text(selectedDateText),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+                      onTap: () async {
+                        DateTime? newDate = await showDatePicker(
+                          context: context,
+                          initialDate: setDateTime,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (newDate != null) {
+                          setState(() {
+                            setDateTime = DateTime(
+                                newDate.year, newDate.month, newDate.day);
+                            selectedDateText =
+                                "Selected Date: ${newDate.month}/${newDate.day}/${newDate.year}";
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  items: categories.map(dropdownMenuItem).toList(),
-                  onChanged: (value) => setState(() {
-                    selectedCategory = value;
-                  }),
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    hintText: 'Select a category',
-                  ),
+              ),
+              actions: [
+                MaterialButton(
+                  onPressed: () => saveExpense(setDateTime),
+                  child: const Text('Save'),
                 ),
-                ListTile(
-                  title: const Text('Set Date'),
-                  onTap: () async {
-                    DateTime? newDate = await showDatePicker(
-                      context: context,
-                      initialDate: setDateTime,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (newDate != null) {
-                      setState(() {
-                        setDateTime =
-                            DateTime(newDate.year, newDate.month, newDate.day);
-                      });
-                    }
-                  },
+                MaterialButton(
+                  onPressed: cancelExpense,
+                  child: const Text('Cancel'),
                 ),
               ],
-            ),
-            actions: [
-              MaterialButton(
-                onPressed: () => saveExpense(setDateTime),
-                child: const Text('Save'),
-              ),
-              MaterialButton(
-                onPressed: cancelExpense,
-                child: const Text('Cancel'),
-              ),
-            ],
-          );
-        },
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -182,145 +206,222 @@ class _HomePageState extends State<HomePage> {
     return 'Good Evening!';
   }
 
+  void goPreviousWeek() {
+    setState(() {
+      if (currentWeekIndex > 0) {
+        currentWeekIndex--;
+      }
+    });
+  }
+
+  void goNextWeek() {
+    setState(() {
+      List<DateTime> weeks = Provider.of<ExpenseList>(context, listen: false)
+          .weeklyExpenses
+          .keys
+          .toList();
+      if (currentWeekIndex < weeks.length - 1) {
+        currentWeekIndex++;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    Provider.of<ExpenseList>(context, listen: false).initData();
+    List<DateTime> weeks = Provider.of<ExpenseList>(context, listen: false)
+        .weeklyExpenses
+        .keys
+        .toList();
+    weeks.sort();
+    DateTime currentWeekStart = currentWeekIndex < weeks.length
+        ? weeks[currentWeekIndex]
+        : DateTime.now();
+
     String greeting = getGreeting();
     final appData = Provider.of<AppData>(context);
     int currentPage = appData.currentPage;
     return Consumer<ExpenseList>(
-      builder: (context, value, child) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Budget Life'),
-          backgroundColor: Colors.red,
-          centerTitle: true,
-          actions: [
-            IconButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text(
-                      'Set Weekly Budget',
-                      textAlign: TextAlign.center,
-                    ),
-                    content: TextField(
-                      controller: weeklyBudgetController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          hintText: "Enter Weekly Budget"),
-                    ),
-                    actions: [
-                      ButtonBar(
-                        alignment: MainAxisAlignment.end,
-                        children: [
-                          MaterialButton(
-                            onPressed: () {
-                              double newBudget =
-                                  double.parse(weeklyBudgetController.text);
-                              setState(() {
-                                changeWeeklyBudget(newBudget);
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Set'),
-                          ),
-                          MaterialButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                        ],
+      builder: (context, value, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Budget Life'),
+            backgroundColor: Colors.red,
+            centerTitle: true,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text(
+                        'Set Weekly Budget',
+                        textAlign: TextAlign.center,
                       ),
-                    ],
+                      content: TextField(
+                        controller: weeklyBudgetController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                            hintText: "Enter Weekly Budget"),
+                      ),
+                      actions: [
+                        ButtonBar(
+                          alignment: MainAxisAlignment.end,
+                          children: [
+                            MaterialButton(
+                              onPressed: () {
+                                double newBudget =
+                                    double.parse(weeklyBudgetController.text);
+                                Future.delayed(Duration.zero, () {
+                                  setState(() {
+                                    changeWeeklyBudget(newBudget);
+                                  });
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Set'),
+                            ),
+                            MaterialButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.settings),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.white,
+          body: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    greeting,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 30,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                );
-              },
-              icon: const Icon(Icons.settings),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        body: ListView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                greeting,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 30,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            ExpenseReport(
-              weekStart: value.getStartWeekDate(),
-              weeklyBudget: value.weeklyBudget,
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: value.getExpenseList().length,
-              itemBuilder: (context, index) => ExpenseDisplay(
-                type: value.getExpenseList()[index].type,
-                price: value.getExpenseList()[index].price,
-                dateTime: value.getExpenseList()[index].dateTime,
-                category: value.getExpenseList()[index].category,
-                deletePressed: (context) =>
-                    removeExpense(value.getExpenseList()[index]),
-              ),
-            ),
-            const SizedBox(
-              height: 35,
-            ),
-          ],
-        ),
-        bottomNavigationBar: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 5.0,
-          clipBehavior: Clip.antiAlias,
-          color: Colors.red,
-          child: SizedBox(
-            height: kBottomNavigationBarHeight,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      currentPage = 0;
-                      appData.setCurrentPage(currentPage);
-                    });
-                  },
-                  icon: const Icon(Icons.attach_money),
-                  color: currentPage == 0 ? Colors.black : Colors.white,
+                ExpenseReport(
+                  weekStart: currentWeekStart,
+                  weeklyBudget: Provider.of<ExpenseList>(context, listen: false)
+                      .weeklyBudget,
                 ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      currentPage = 1;
-                      appData.setCurrentPage(currentPage);
-                    });
-                  },
-                  icon: const Icon(Icons.list),
-                  color: currentPage == 1 ? Colors.black : Colors.white,
+                const SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: goPreviousWeek,
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Text(
+                      "Week of ${currentWeekStart.month}/${currentWeekStart.day}/${currentWeekStart.year}",
+                    ),
+                    IconButton(
+                      onPressed: goNextWeek,
+                      icon: const Icon(Icons.arrow_forward),
+                    ),
+                  ],
+                ),
+                Provider.of<ExpenseList>(context)
+                        .getExpenseList(currentWeekStart)
+                        .isEmpty
+                    ? const Center(
+                        child: Text("No Expenses to Display"),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount:
+                            value.getExpenseList(currentWeekStart).length,
+                        itemBuilder: (context, index) => ExpenseDisplay(
+                          key: ValueKey(value
+                              .getExpenseList(currentWeekStart)[index]
+                              .dateTime),
+                          type: value
+                              .getExpenseList(currentWeekStart)[index]
+                              .type,
+                          price: value
+                              .getExpenseList(currentWeekStart)[index]
+                              .price,
+                          dateTime: value
+                              .getExpenseList(currentWeekStart)[index]
+                              .dateTime,
+                          category: value
+                              .getExpenseList(currentWeekStart)[index]
+                              .category,
+                          deletePressed: (context) => removeExpense(
+                              value.getExpenseList(currentWeekStart)[index]),
+                        ),
+                      ),
+                const SizedBox(
+                  height: 35,
                 ),
               ],
             ),
           ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: FloatingActionButton(
-          onPressed: addExpense,
-          backgroundColor: Colors.red,
-          child: const Icon(Icons.add),
-        ),
-      ),
+          bottomNavigationBar: BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 5.0,
+            clipBehavior: Clip.antiAlias,
+            color: Colors.red,
+            child: SizedBox(
+              height: kBottomNavigationBarHeight,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  IconButton(
+                    onPressed: () {
+                      Future.delayed(Duration.zero, () {
+                        setState(() {
+                          currentPage = 0;
+                          appData.setCurrentPage(currentPage);
+                        });
+                      });
+                    },
+                    icon: const Icon(Icons.attach_money),
+                    color: currentPage == 0 ? Colors.black : Colors.white,
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Future.delayed(Duration.zero, () {
+                        setState(() {
+                          currentPage = 1;
+                          appData.setCurrentPage(currentPage);
+                        });
+                      });
+                    },
+                    icon: const Icon(Icons.list),
+                    color: currentPage == 1 ? Colors.black : Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: FloatingActionButton(
+            onPressed: addExpense,
+            backgroundColor: Colors.red,
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

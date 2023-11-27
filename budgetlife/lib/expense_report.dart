@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:budgetlife/bar_graph.dart';
 import 'package:budgetlife/expense_list.dart';
+import 'package:budgetlife/expense.dart';
 
 class ExpenseReport extends StatelessWidget {
   final DateTime weekStart;
@@ -26,13 +27,13 @@ class ExpenseReport extends StatelessWidget {
   ) {
     double? maxExpense = 100;
     List<double> expenseValues = [
-      expenses.calculateDailyExpenseSummary()[sun] ?? 0,
-      expenses.calculateDailyExpenseSummary()[mon] ?? 0,
-      expenses.calculateDailyExpenseSummary()[tues] ?? 0,
-      expenses.calculateDailyExpenseSummary()[wed] ?? 0,
-      expenses.calculateDailyExpenseSummary()[thurs] ?? 0,
-      expenses.calculateDailyExpenseSummary()[fri] ?? 0,
-      expenses.calculateDailyExpenseSummary()[sat] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[sun] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[mon] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[tues] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[wed] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[thurs] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[fri] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[sat] ?? 0,
     ];
     expenseValues.sort();
 
@@ -51,13 +52,13 @@ class ExpenseReport extends StatelessWidget {
     String sat,
   ) {
     List<double> expenseValues = [
-      expenses.calculateDailyExpenseSummary()[sun] ?? 0,
-      expenses.calculateDailyExpenseSummary()[mon] ?? 0,
-      expenses.calculateDailyExpenseSummary()[tues] ?? 0,
-      expenses.calculateDailyExpenseSummary()[wed] ?? 0,
-      expenses.calculateDailyExpenseSummary()[thurs] ?? 0,
-      expenses.calculateDailyExpenseSummary()[fri] ?? 0,
-      expenses.calculateDailyExpenseSummary()[sat] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[sun] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[mon] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[tues] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[wed] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[thurs] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[fri] ?? 0,
+      expenses.calculateDailyExpenseSummary(weekStart)[sat] ?? 0,
     ];
     double totalExpense = 0;
     for (int i = 0; i < expenseValues.length; i++) {
@@ -79,61 +80,74 @@ class ExpenseReport extends StatelessWidget {
     String saturday = setDateTimeString(weekStart.add(const Duration(days: 6)));
 
     return Consumer<ExpenseList>(
-      builder: (context, value, child) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 15, 15, 5),
-            child: Row(
-              children: [
-                const Text('Weekly Total: '),
-                Text(
-                    '\$${getWeekTotal(value, sunday, monday, tuesday, wednesday, thursday, friday, saturday)}'),
-              ],
+      builder: (context, value, child) {
+        List<Expense> weeklyExpenses = value.getExpenseList(weekStart);
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(15, 15, 15, 5),
+              child: Row(
+                children: [
+                  const Text('Weekly Total: '),
+                  Text(
+                      '\$${getWeekTotal(value, sunday, monday, tuesday, wednesday, thursday, friday, saturday)}'),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 0, 15, 5),
-            child: Row(
-              children: [
-                const Text('Weekly Budget: '),
-                Text('\$${weeklyBudget.toStringAsFixed(2)}'),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(15, 0, 15, 5),
+              child: Row(
+                children: [
+                  const Text('Weekly Budget: '),
+                  Text('\$${weeklyBudget.toStringAsFixed(2)}'),
+                ],
+              ),
             ),
-          ),
-          SizedBox(
-            height: 325,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                SizedBox(
-                  width: screenWidth,
-                  child: PieChartWidget(expenses: value.getExpenseList()),
-                ),
-                const SizedBox(
-                  width: 15,
-                ),
-                SizedBox(
-                  width: screenWidth,
-                  child: BarGraph(
-                    maxY: weeklyBudget,
-                    sunTotal: value.calculateDailyExpenseSummary()[sunday] ?? 0,
-                    monTotal: value.calculateDailyExpenseSummary()[monday] ?? 0,
-                    tuesTotal:
-                        value.calculateDailyExpenseSummary()[tuesday] ?? 0,
-                    wedTotal:
-                        value.calculateDailyExpenseSummary()[wednesday] ?? 0,
-                    thursTotal:
-                        value.calculateDailyExpenseSummary()[thursday] ?? 0,
-                    friTotal: value.calculateDailyExpenseSummary()[friday] ?? 0,
-                    satTotal:
-                        value.calculateDailyExpenseSummary()[saturday] ?? 0,
+            SizedBox(
+              height: 325,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  SizedBox(
+                    width: screenWidth,
+                    child: PieChartWidget(expenses: weeklyExpenses),
                   ),
-                ),
-              ],
+                  const SizedBox(
+                    width: 15,
+                  ),
+                  SizedBox(
+                    width: screenWidth,
+                    child: BarGraph(
+                      maxY: weeklyBudget,
+                      sunTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[sunday] ??
+                          0,
+                      monTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[monday] ??
+                          0,
+                      tuesTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[tuesday] ??
+                          0,
+                      wedTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[wednesday] ??
+                          0,
+                      thursTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[thursday] ??
+                          0,
+                      friTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[friday] ??
+                          0,
+                      satTotal: value.calculateDailyExpenseSummary(
+                              weekStart)[saturday] ??
+                          0,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

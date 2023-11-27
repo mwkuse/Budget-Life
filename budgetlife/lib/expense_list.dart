@@ -5,32 +5,39 @@ import 'expense.dart';
 class ExpenseList extends ChangeNotifier {
   final expenseDataBase = HiveDatabase();
   // Create List of Expenses
+  Map<DateTime, List<Expense>> weeklyExpenses = {};
   List<Expense> expenseList = [];
   double weeklyBudget = 1000;
 
   // Return List of Expenses
-  List<Expense> getExpenseList() {
-    return expenseList;
+  List<Expense> getExpenseList(DateTime dateTime) {
+    return weeklyExpenses[dateTime] ?? [];
   }
 
   void initData() {
-    if (expenseDataBase.getData().isNotEmpty) {
-      expenseList = expenseDataBase.getData();
+    if (expenseDataBase.getWeeklyExpenses().isNotEmpty) {
+      weeklyExpenses = expenseDataBase.getWeeklyExpenses();
     }
   }
 
-  // Add New Expense to List
   void addExpense(Expense expense) {
-    expenseList.add(expense);
+    DateTime startOfWeek = getStartWeekDate(expense.dateTime);
+    if (!weeklyExpenses.containsKey(startOfWeek)) {
+      weeklyExpenses[startOfWeek] = [];
+    }
+    weeklyExpenses[startOfWeek]!.add(expense);
     notifyListeners();
-    expenseDataBase.saveData(expenseList);
+    expenseDataBase.saveWeeklyExpenses(weeklyExpenses);
   }
 
-  // Remove Expense from List
   void removeExpense(Expense expense) {
-    expenseList.remove(expense);
-    notifyListeners();
-    expenseDataBase.saveData(expenseList);
+    DateTime startOfWeek = getStartWeekDate(expense.dateTime);
+    if (weeklyExpenses.containsKey(startOfWeek)) {
+      weeklyExpenses[startOfWeek]!.remove(expense);
+      notifyListeners();
+      expenseDataBase.saveWeeklyExpenses(weeklyExpenses);
+      // expenseDataBase.saveData(weeklyExpenses[startOfWeek]!);
+    }
   }
 
   // Find and Return the Day of the Week
@@ -56,22 +63,21 @@ class ExpenseList extends ChangeNotifier {
   }
 
   // Get the Date for Week Start
-  DateTime getStartWeekDate() {
-    DateTime? startWeekDate;
-    DateTime today = DateTime.now();
+  DateTime getStartWeekDate(DateTime dateTime) {
+    DateTime startWeekDate = dateTime;
     // Find Nearest Sunday (Start of Week)
     for (int i = 0; i < 7; i++) {
-      if (getDay(today.subtract(Duration(days: i))) == 'Sunday') {
-        startWeekDate = today.subtract(Duration(days: i));
+      if (getDay(dateTime.subtract(Duration(days: i))) == 'Sunday') {
+        startWeekDate = dateTime.subtract(Duration(days: i));
       }
     }
-    return startWeekDate!;
+    return startWeekDate;
   }
 
   // Add to or Create Total Cost For a Specific Date
-  Map<String, double?> calculateDailyExpenseSummary() {
+  Map<String, double?> calculateDailyExpenseSummary(DateTime dateTime) {
     Map<String, double> dailyExpenseSummary = {};
-    for (var expense in expenseList) {
+    for (var expense in weeklyExpenses[dateTime]!) {
       String date = setDateTimeString(expense.dateTime);
       double price = double.parse(expense.price);
       // If There Are Already Existing Expenses with the Current Date

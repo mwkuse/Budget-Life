@@ -6,7 +6,6 @@ class HiveDatabase {
   final _hiveBox = Hive.box("budget_life_database");
 
   // Budgeter
-  // Given a list allExpense convert into dynamic list and add to hive box
   void saveData(List<Expense> allExpenses) {
     List<List<dynamic>> formattedExpenses = [];
     for (var expense in allExpenses) {
@@ -47,6 +46,21 @@ class HiveDatabase {
     return _hiveBox.get("weeklyBudget");
   }
 
+  void saveWeeklyExpenses(Map<DateTime, List<Expense>> weeklyExpenses) {
+    _hiveBox.put("weeklyExpenses", weeklyExpenses);
+  }
+
+  Map<DateTime, List<Expense>> getWeeklyExpenses() {
+    final dynamic result = _hiveBox.get("weeklyExpenses");
+    if (result is Map<dynamic, dynamic>) {
+      final weeklyExpenses = result.map((key, value) =>
+          MapEntry(DateTime.parse(key.toString()), value.cast<Expense>()));
+      return Map<DateTime, List<Expense>>.from(weeklyExpenses);
+    } else {
+      return {};
+    }
+  }
+
   // To Do List
   void saveToDoData(List<ToDoEntry> allToDos) {
     List<List<dynamic>> formattedToDos = [];
@@ -55,7 +69,6 @@ class HiveDatabase {
         todo.title,
         todo.description,
         todo.isChecked,
-        //todo.dateTime,
       ];
       formattedToDos.add(formattedToDo);
     }
@@ -70,12 +83,9 @@ class HiveDatabase {
       String title = hiveToDos[i][0];
       String description = hiveToDos[i][1];
       bool isChecked = hiveToDos[i][2];
-      //DateTime dateTime = hiveToDos[i][2];
 
       ToDoEntry todo = ToDoEntry(
-          title: title,
-          description: description,
-          isChecked: isChecked /*,dateTime: dateTime*/);
+          title: title, description: description, isChecked: isChecked);
       toDoData.add(todo);
     }
     return toDoData;
